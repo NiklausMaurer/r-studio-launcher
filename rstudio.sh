@@ -7,7 +7,7 @@ set -o pipefail
 
 
 function main() {
-	local directory=${1:-"$(pwd)"}
+	local directory=$(realpath ${1:-"$(pwd)"})
 	local directory_name=$(basename ${directory})
 	
 	docker run --rm -d \
