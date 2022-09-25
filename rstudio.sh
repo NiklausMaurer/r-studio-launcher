@@ -10,15 +10,17 @@ function main() {
 	local directory=$(realpath ${1:-"$(pwd)"})
 	local directory_name=$(basename ${directory})
 	
-	docker run --rm -d \
+	open_prowser_when_ready &
+
+	docker run --rm \
 		--name rstudio \
 		-e PASSWORD=$(cat secrets/password) \
 		-v ${directory}:/home/rstudio/${directory_name} \
 		-p 8787:8787 rocker/rstudio
+}
 
-	echo -n "Waiting for container to start "
-	until nc -z localhost 8787  &> /dev/null; do sleep 1; echo -n ".";	done
-
+function open_prowser_when_ready() {
+	until nc -z localhost 8787  &> /dev/null; do sleep 1; done
 	xdg-open "http://localhost:8787"
 }
 
