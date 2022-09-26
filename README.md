@@ -1,5 +1,9 @@
 # r-studio-launcher
-Tiny helper script to launch r-studio in a docker container
+Tiny helper script to launch r-studio in a docker container.
+
+The script is implemented in a way that allows mulitple instances to run in parallel. The current version attaches the terminal to the container after launching the browser. This way the container can be terminated easily by pressing `Crtl+C` in the respective terminal.
+
+**_Attention:_** R-Studio will be run with `AUTHENTICATION_DISABLED=true`. To mitigate security risks, the container will only listen to the loopback interface `127.0.0.1` by default.
 
 ## Setting up
 Just copy the script to wherever you want. In case you download it don't forget to add execution permissions
