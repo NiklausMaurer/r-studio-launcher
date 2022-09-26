@@ -8,20 +8,41 @@ set -o pipefail
 
 function main() {
 	local directory=$(realpath ${1:-"$(pwd)"})
-	local directory_name=$(basename ${directory})
 	
-	open_prowser_when_ready &
+	local container_id=$(run_container ${directory})
+	local container_port=$(get_container_port ${container_id})
 
-	docker run --rm \
-		--name rstudio \
+	open_prowser_when_ready ${container_port} &
+
+	docker attach ${container_id}
+}
+
+function run_container() {
+	local directory=${1}
+	local directory_name=$(basename ${directory})
+
+	docker run --rm -d \
 		-e PASSWORD=$(cat secrets/password) \
 		-v ${directory}:/home/rstudio/${directory_name} \
-		-p 8787:8787 rocker/rstudio
+		-p 8787 rocker/rstudio
+}
+
+function get_container_port() {
+	local container_id=${1}
+	local container_port=$( \
+		docker \
+			inspect \
+			--format '{{ (index (index .NetworkSettings.Ports "8787/tcp") 0).HostPort }}' \
+			${container_id}
+	)
+
+	echo ${container_port}
 }
 
 function open_prowser_when_ready() {
-	until nc -z localhost 8787  &> /dev/null; do sleep 1; done
-	xdg-open "http://localhost:8787"
+	local container_port=${1}
+	until nc -z localhost ${container_port}  &> /dev/null; do sleep 1; done
+	xdg-open "http://localhost:${container_port}"
 }
 
 
