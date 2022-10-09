@@ -7,9 +7,9 @@ set -o pipefail
 
 
 function main() {
-	local directory=$(realpath ${1:-"$(pwd)"})
+	local local_directory=$(realpath ${1:-"$(pwd)"})
 	
-	local container_id=$(run_container ${directory})
+	local container_id=$(run_container ${local_directory})
 	local container_port=$(get_container_port ${container_id})
 
 	open_browser_when_ready ${container_port} &
@@ -18,12 +18,12 @@ function main() {
 }
 
 function run_container() {
-	local directory=${1}
-	local directory_name=$(basename ${directory})
+	local local_directory=${1}
+	local directory_name=$(basename ${local_directory})
 
 	docker run --rm -d \
 		-e DISABLE_AUTH=true  \
-		-v ${directory}:/home/rstudio/${directory_name} \
+		-v ${local_directory}:/home/rstudio/${directory_name} \
 		-p 127.0.0.1:0:8787 \
 		rocker/rstudio
 }
