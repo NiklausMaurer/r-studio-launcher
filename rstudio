@@ -25,7 +25,7 @@ function run_container() {
 		-e DISABLE_AUTH=true  \
 		-v ${local_directory}:/home/rstudio/${directory_name} \
 		-p 127.0.0.1:0:8787 \
-		rocker/rstudio
+		rocker/tidyverse:latest
 }
 
 function get_container_port() {
