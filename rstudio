@@ -5,13 +5,10 @@ set -o nounset
 set -o pipefail
 # set -o xtrace # for debugging
 
-
 function main() {
 	local local_directory=$(realpath ${1:-"$(pwd)"})
-	
-	local directory_name=$(basename ${local_directory})
-	local hash=$(get_partial_hash "${local_directory}")
-	local container_name="rstudio-${directory_name}-${hash}"
+
+	local container_name=$(container_name "${local_directory}")
 
 	if container_is_exited "${container_name}"; then
 		print_green "Starting existing container ${container_name}"
@@ -24,20 +21,29 @@ function main() {
 		local container_id=$(run_container "${local_directory}" "${container_name}")
 	fi
 
-	local container_port=$(get_container_port ${container_id})
+	local container_port=$(get_container_port "${container_id}")
 
 	open_browser_when_ready ${container_port} &
 
 	docker attach ${container_id}
 }
 
+function container_name() {
+	local local_directory="${1}"
+
+	local hash=$(get_partial_hash "${local_directory}")
+	local directory_name=$(basename ${local_directory})
+	echo "rstudio-${directory_name}-${hash}"
+}
+
 function run_container() {
 	local local_directory=${1}
 	local container_name=${2}
 
+	local directory_name=$(basename "${local_directory}")
 	docker run -d \
 			-e DISABLE_AUTH=true  \
-			-v ${local_directory}:/home/rstudio/${directory_name} \
+			-v "${local_directory}:/home/rstudio/${directory_name}" \
 			-p 127.0.0.1:0:8787 \
 			--name "${container_name}" \
 			rocker/tidyverse:latest
@@ -51,7 +57,6 @@ function get_container_port() {
 			--format '{{ (index (index .NetworkSettings.Ports "8787/tcp") 0).HostPort }}' \
 			${container_id}
 	)
-
 	echo ${container_port}
 }
 
@@ -59,7 +64,6 @@ function get_partial_hash() {
 	local input="${1}"
 
 	local hash=$(echo -n "${input}" | sha1sum)
-
 	echo "${hash:0:19}"
 }
 
@@ -72,13 +76,11 @@ function open_browser_when_ready() {
 
 function container_is_exited() {
 	local container_name=${1}
-
 	container_is_in_status "${container_name}" "Exited"
 }
 
 function container_is_running() {
 	local container_name=${1}
-
 	container_is_in_status "${container_name}" "Up"
 }
 
@@ -94,6 +96,5 @@ function container_is_in_status() {
 function print_green() {
 	echo -e "\e[32m${1}\e[0m"
 }
-
 
 main "$@"
