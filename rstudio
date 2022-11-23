@@ -9,7 +9,11 @@ set -o pipefail
 function main() {
 	local local_directory=$(realpath ${1:-"$(pwd)"})
 	
-	local container_id=$(run_container ${local_directory})
+	local directory_name=$(basename ${local_directory})
+	local hash=$(get_partial_hash "${local_directory}")
+	local container_name="rstudio-${directory_name}-${hash}"
+
+	local container_id=$(run_container ${local_directory} ${container_name})
 	local container_port=$(get_container_port ${container_id})
 
 	open_browser_when_ready ${container_port} &
@@ -19,12 +23,13 @@ function main() {
 
 function run_container() {
 	local local_directory=${1}
-	local directory_name=$(basename ${local_directory})
-
+	local container_name=${2}
+	
 	docker run --rm -d \
 		-e DISABLE_AUTH=true  \
 		-v ${local_directory}:/home/rstudio \
 		-p 127.0.0.1:0:8787 \
+		--name "${container_name}" \
 		rocker/tidyverse:latest
 }
 
@@ -38,6 +43,14 @@ function get_container_port() {
 	)
 
 	echo ${container_port}
+}
+
+function get_partial_hash() {
+	local input="${1}"
+
+	local hash=$(echo -n "${input}" | sha1sum)
+
+	echo "${hash:0:19}"
 }
 
 function open_browser_when_ready() {
