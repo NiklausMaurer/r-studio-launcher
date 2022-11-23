@@ -48,4 +48,4 @@ function open_browser_when_ready() {
 }
 
 
-main $@
+main "$@"
