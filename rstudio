@@ -27,7 +27,7 @@ function run_container() {
 	
 	docker run --rm -d \
 		-e DISABLE_AUTH=true  \
-		-v ${local_directory}:/home/rstudio \
+		-v ${local_directory}:/home/rstudio/${directory_name} \
 		-p 127.0.0.1:0:8787 \
 		--name "${container_name}" \
 		rocker/tidyverse:latest
