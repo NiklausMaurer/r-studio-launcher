@@ -13,7 +13,17 @@ function main() {
 	local hash=$(get_partial_hash "${local_directory}")
 	local container_name="rstudio-${directory_name}-${hash}"
 
-	local container_id=$(run_container ${local_directory} ${container_name})
+	if container_is_exited "${container_name}"; then
+		print_green "Starting existing container ${container_name}"
+		local container_id=$(docker start "${container_name}")
+	elif container_is_running "${container_name}"; then
+		print_green "Found running container ${container_name}"
+		local container_id="${container_name}"
+	else
+		print_green "Starting new container ${container_name}"
+		local container_id=$(run_container "${local_directory}" "${container_name}")
+	fi
+
 	local container_port=$(get_container_port ${container_id})
 
 	open_browser_when_ready ${container_port} &
@@ -24,19 +34,13 @@ function main() {
 function run_container() {
 	local local_directory=${1}
 	local container_name=${2}
-	
-	if container_is_exited "${container_name}"; then
-		docker start "${container_name}"
-	elif container_is_running "${container_name}"; then
-		echo "${container_name}"
-	else
-		docker run -d \
+
+	docker run -d \
 			-e DISABLE_AUTH=true  \
 			-v ${local_directory}:/home/rstudio/${directory_name} \
 			-p 127.0.0.1:0:8787 \
 			--name "${container_name}" \
 			rocker/tidyverse:latest
-	fi
 }
 
 function get_container_port() {
@@ -69,17 +73,27 @@ function open_browser_when_ready() {
 function container_is_exited() {
 	local container_name=${1}
 
-	local exited=$(docker container ls --all --format='{{.Status}}' --filter="name=${container_name}" | grep --count Exited)
-
-	(( ${exited} > 0 ))
+	container_is_in_status "${container_name}" "Exited"
 }
 
 function container_is_running() {
 	local container_name=${1}
 
-	local up=$(docker container ls --all --format='{{.Status}}' --filter="name=${container_name}" | grep --count Up)
-
-	(( ${up} > 0 ))
+	container_is_in_status "${container_name}" "Up"
 }
+
+function container_is_in_status() {
+	local container_name=${1}
+	local status=${2}
+
+	local status=$(docker container ls --all --format='{{.Status}}' --filter="name=${container_name}" | grep --count ${status})
+
+	(( ${status} > 0 ))
+}
+
+function print_green() {
+	echo -e "\e[32m${1}\e[0m"
+}
+
 
 main "$@"
